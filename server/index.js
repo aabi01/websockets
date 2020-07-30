@@ -1,6 +1,7 @@
 var WebSocketServer = require('websocket').server;
 var http = require('http');
 var PORT = 8085;
+var peers = [];
 
 var server = http.createServer(function (request, response) {
 	console.log((new Date()) + ' Received request for ' + request.url);
@@ -38,8 +39,20 @@ wsServer.on('request', function (request) {
 	console.log((new Date()) + ' Connection accepted.');
 	connection.on('message', function (message) {
 		if (message.type === 'utf8') {
-			console.log('Received Message: ' + message.utf8Data);
-			connection.sendUTF(message.utf8Data);
+			if (message.utf8Data.startsWith('ip:')) {
+				console.log('Received IP: ' + message.utf8Data);
+				const _ip = message.utf8Data.slice(3);
+				if (!peers.includes(_ip)) {
+					peers.push(_ip);
+				}
+			}
+			// connection.sendUTF(message.utf8Data);
+			broadcastPeers(connection);
+
+			if (message.utf8Data === 'getPeers') {
+				console.log('Received Peer req: ' + message.utf8Data);
+				broadcastPeers(connection);
+			}
 		}
 		else if (message.type === 'binary') {
 			console.log('Received Binary Message of ' + message.binaryData.length + ' bytes');
@@ -47,6 +60,15 @@ wsServer.on('request', function (request) {
 		}
 	});
 	connection.on('close', function (reasonCode, description) {
-		console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
+		console.log(' Peer ' + connection.remoteAddress + ' disconnected.');
+		console.log(peers);
+		peers = peers.filter(p => !connection.remoteAddress.includes(p));
+		console.log(peers);
 	});
 });
+
+function broadcastPeers(conn) {
+	const peerString = peers.join(',');
+	console.log(peerString);
+	conn.sendUTF(peerString);
+}

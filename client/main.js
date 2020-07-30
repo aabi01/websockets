@@ -8,14 +8,14 @@ client.onerror = function () {
 client.onopen = function () {
 	console.log('WebSocket Client Connected');
 
-	function sendNumber() {
+	function getPeers() {
 		if (client.readyState === client.OPEN) {
-			var number = Math.round(Math.random() * 0xFFFFFF);
-			client.send(number.toString());
-			setTimeout(sendNumber, 3000);
+			console.log('getPeers');
+			client.send('getPeers')
+			setTimeout(getPeers, 3000);
 		}
 	}
-	sendNumber();
+	getPeers();
 };
 
 client.onclose = function () {
@@ -24,10 +24,17 @@ client.onclose = function () {
 
 client.onmessage = function (e) {
 	if (typeof e.data === 'string') {
-		console.log("Received: '" + e.data + "'");
+		console.log(`Received from Server: ${e.data}`);
+		const peers = e.data.split(',');
+		const peersList = document.getElementById('peers');
+		peersList.querySelectorAll('*').forEach(n => n.remove());
+		for (const p of peers) {
+			const li = document.createElement('li');
+			li.appendChild(document.createTextNode(p));
+			peersList.appendChild(li);
+		}
 	}
 };
-
 
 // WebRTC - Get IP Address
 var peerConn;
@@ -46,7 +53,7 @@ peerConn.onicecandidate = function (event) {
 		console.log('GOT IP ADDRESS: ', ip);
 		document.querySelector('#localip').innerHTML = ip;
 		document.querySelector('#serverip').innerHTML = serverURL;
-		// socket.emit('peer-connected', ip);
+		client.send(`ip:${ip}`);
 	}
 };
 dataChannel = peerConn.createDataChannel('photos');
