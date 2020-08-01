@@ -1,6 +1,6 @@
-var serverURL = 'ws://192.168.0.103:8085/';
-var client = new WebSocket(serverURL);
-console.log(client);
+var websocketServerURL = 'ws://192.168.0.101:8085/';
+var webServerURL = 'http://localhost:3000';
+var client = new WebSocket(websocketServerURL);
 
 client.onerror = function (error) {
 	console.log('Connection Error', error);
@@ -51,7 +51,7 @@ function getLocalIPAddress() {
 			var ip = event.candidate.address;
 			console.log('GOT IP ADDRESS: ', ip);
 			document.querySelector('#localip').innerHTML = ip;
-			document.querySelector('#serverip').innerHTML = serverURL;
+			document.querySelector('#serverip').innerHTML = websocketServerURL;
 			client.send(`ip:${ip}`);
 		}
 	};
@@ -71,3 +71,32 @@ function getLocalIPAddress() {
 		}
 	}
 }
+
+function callXMLHTTP() {
+	var xhr = new XMLHttpRequest();
+	xhr.open("GET", `${webServerURL}/json`, true);
+	xhr.onload = function (e) {
+		console.log({ xhr });
+		if (xhr.readyState === 4) {
+			if (xhr.status === 200) {
+				var res = JSON.parse(xhr.responseText);
+				document.querySelector('#xmlhttp-response').innerHTML = res.message;
+			} else {
+				console.error(xhr.statusText);
+			}
+		}
+	};
+	xhr.onerror = function (e) {
+		console.error(xhr.statusText);
+	};
+	xhr.send(null);
+}
+
+callXMLHTTP();
+
+fetch(`${webServerURL}/json`)
+	.then(res => res.json())
+	.then(json => {
+		document.querySelector('#fetch-response').innerHTML = json.message;
+	})
+	.catch(err => console.log({ err }));
