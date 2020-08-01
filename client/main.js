@@ -1,8 +1,9 @@
 var serverURL = 'ws://192.168.0.103:8085/';
-var client = new WebSocket(serverURL, 'echo-protocol');
+var client = new WebSocket(serverURL);
+console.log(client);
 
-client.onerror = function () {
-	console.log('Connection Error');
+client.onerror = function (error) {
+	console.log('Connection Error', error);
 };
 
 client.onopen = function () {
@@ -16,6 +17,8 @@ client.onopen = function () {
 		}
 	}
 	getPeers();
+
+	getLocalIPAddress();
 };
 
 client.onclose = function () {
@@ -37,37 +40,34 @@ client.onmessage = function (e) {
 };
 
 // WebRTC - Get IP Address
-var peerConn;
-var dataChannel;
-// var socket = io();
+function getLocalIPAddress() {
+	var peerConn;
+	var dataChannel;
 
-// socket.on('peers', (peers) => {
-// 	console.log('peers received: ', peers);
-// });
+	peerConn = new RTCPeerConnection({});
+	peerConn.onicecandidate = function (event) {
+		if (event.candidate) {
+			console.log('CANDIDATE: ', event.candidate);
+			var ip = event.candidate.address;
+			console.log('GOT IP ADDRESS: ', ip);
+			document.querySelector('#localip').innerHTML = ip;
+			document.querySelector('#serverip').innerHTML = serverURL;
+			client.send(`ip:${ip}`);
+		}
+	};
+	dataChannel = peerConn.createDataChannel('photos');
+	peerConn.createOffer(onLocalSessionCreated, logError);
 
-peerConn = new RTCPeerConnection({});
-peerConn.onicecandidate = function (event) {
-	if (event.candidate) {
-		console.log('CANDIDATE: ', event.candidate);
-		var ip = event.candidate.address;
-		console.log('GOT IP ADDRESS: ', ip);
-		document.querySelector('#localip').innerHTML = ip;
-		document.querySelector('#serverip').innerHTML = serverURL;
-		client.send(`ip:${ip}`);
+	function onLocalSessionCreated(desc) {
+		peerConn.setLocalDescription(desc, function () { }, logError);
 	}
-};
-dataChannel = peerConn.createDataChannel('photos');
-peerConn.createOffer(onLocalSessionCreated, logError);
 
-function onLocalSessionCreated(desc) {
-	peerConn.setLocalDescription(desc, function () { }, logError);
-}
-
-function logError(err) {
-	if (!err) return;
-	if (typeof err === 'string') {
-		console.warn(err);
-	} else {
-		console.warn(err.toString(), err);
+	function logError(err) {
+		if (!err) return;
+		if (typeof err === 'string') {
+			console.warn(err);
+		} else {
+			console.warn(err.toString(), err);
+		}
 	}
 }
