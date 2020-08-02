@@ -32,7 +32,7 @@ wsServer.on('request', function (request) {
 			emitPeers(connection);
 
 			if (message.utf8Data === 'getPeers') {
-				console.log('Received Peer req: ' + message.utf8Data);
+				// console.log('Received Peer req: ' + message.utf8Data);
 				emitPeers(connection);
 			}
 		}
@@ -48,5 +48,6 @@ wsServer.on('request', function (request) {
 
 function emitPeers(conn) {
 	const peerString = peers.join(',');
+	console.log(peerString);
 	conn.sendUTF(peerString);
 }
